@@ -87,24 +87,14 @@ class Vector:
     def min(self, v):
         min_points = []
         for i in range(0, self.num_dimensions):
-            if self.points[i] == None:
-                min_points.append(v.points[i])
-            elif v.points[i] == None:
-                min_points.append(self.points[i])
-            else:
-                min_points.append(min(self.points[i], v.points[i]))
+            min_points.append(v.points[i] if self.points[i] == None else self.points[i] if v.points[i] == None else min(self.points[i], v.points[i]))
         return Vector(min_points)
 
     # Assumes self.num_dimensions == v.num_dimensions
     def max(self, v):
         max_points = []
         for i in range(0, self.num_dimensions):
-            if self.points[i] == None:
-                max_points.append(v.points[i])
-            elif v.points[i] == None:
-                max_points.append(self.points[i])
-            else:
-                max_points.append(max(self.points[i], v.points[i]))
+            max_points.append(v.points[i] if self.points[i] == None else self.points[i] if v.points[i] == None else max(self.points[i], v.points[i]))
         return Vector(max_points)
 
     def to_string(self):
@@ -133,7 +123,7 @@ def compute_line_blocks(v1, v2, blocks):
         blocks[(v1.points[0], v1.points[1], v1.points[2])] = 1
     else:
         # Note: float casting is not necessary in python3, but in case one
-        #       changes to python2 the cast explicit
+        #       changes to python2 the cast explicit to prevent integer division
         max_delta = max(dv.points)
         x_step = float(dv.points[0]) / float(max_delta) * (1 if v2.points[0] - v1.points[0] > 0 else -1)
         y_step = float(dv.points[1]) / float(max_delta) * (1 if v2.points[1] - v1.points[1] > 0 else -1)
@@ -174,7 +164,8 @@ def parse_ascii(fh, origin_vector, unit_vectors):
     triangles = []
 
     header = fh.readline()
-    print("Header", header)
+    if is_verbose:
+        print("Header", header)
 
     for count, normal_vector in enumerate(fh): # facet normal n.i n.j n.k
         if normal_vector.decode("utf-8").startswith("endsolid"):
@@ -185,7 +176,8 @@ def parse_ascii(fh, origin_vector, unit_vectors):
         vertex3 = fh.readline().decode("utf-8").split()[1:4] # vertex v3.x v3.y v3.z
         fh.readline() # endloop
         fh.readline() # endfacet
-        print("Triangle", count, normal_vector, vertex1, vertex2, vertex3)
+        if is_verbose:
+            print("Triangle", count, normal_vector, vertex1, vertex2, vertex3)
         for index, data in enumerate(vertex1):
             vertex1[index] = float(data)
         for index, data in enumerate(vertex2):
@@ -200,13 +192,15 @@ def parse_ascii(fh, origin_vector, unit_vectors):
     return triangles
 
 ###############################################################################
-def parse_binary(fh, origin_vector, unit_vectors):
+def parse_binary(fh, origin_vector, unit_vectors, is_verbose):
     triangles = []
 
     header = fh.read(HEADER_SIZE)
-    print("Header", header)
+    if is_verbose:
+        print("Header", header)
     num_triangles = struct.unpack("<I", fh.read(4))[0]
-    print("Num Triangles ", num_triangles)
+    if is_verbose:
+        print("Num Triangles ", num_triangles)
 
     for count in range(1, num_triangles):
         normal_vector = struct.unpack("<fff", fh.read(12))
@@ -214,7 +208,8 @@ def parse_binary(fh, origin_vector, unit_vectors):
         vertex2 = struct.unpack("<fff", fh.read(12))
         vertex3 = struct.unpack("<fff", fh.read(12))
         attribute = struct.unpack("<H", fh.read(2))[0]
-        print("Triangle", count, normal_vector, vertex1, vertex2, vertex3, attribute)
+        if is_verbose:
+            print("Triangle", count, normal_vector, vertex1, vertex2, vertex3, attribute)
         v1 = transform(vertex1, origin_vector, unit_vectors)
         v2 = transform(vertex2, origin_vector, unit_vectors)
         v3 = transform(vertex3, origin_vector, unit_vectors)
@@ -234,20 +229,20 @@ def main(args):
         header_prefix = peek(fh, 5).decode("utf-8")
         if header_prefix == "solid":
             try:
-                triangles = parse_ascii(fh, origin_vector, unit_vectors)
+                triangles = parse_ascii(fh, origin_vector, unit_vectors, args.verbose)
             except UnicodeDecodeError:
                 #Note: if file is binary with a header starting with "solid" the parsing will fail with UnicodeDecodeError
                 fh.seek(0)
-                triangles = parse_binary(fh, origin_vector, unit_vectors)
+                triangles = parse_binary(fh, origin_vector, unit_vectors, args.verbose)
         else:
-            triangles = parse_binary(fh, origin_vector, unit_vectors)
+            triangles = parse_binary(fh, origin_vector, unit_vectors, args.verbose)
 
     # Compute unique Minecraft block coordinates 
     blocks = {}
     min_vector = Vector([None, None, None])
     max_vector = Vector([None, None, None])
     for count, triangle in enumerate(triangles):
-        if count % 1000 == 0:
+        if args.verbose and count % 1000 == 0:
             print("Processed", count, "triangles...")
         min_vector = min_vector.min(triangle.v1).min(triangle.v2).min(triangle.v3)
         max_vector = max_vector.max(triangle.v1).max(triangle.v2).max(triangle.v3)
@@ -255,11 +250,11 @@ def main(args):
 
     # Render blocks into Minecraft server console 
     for count, block in enumerate(blocks):
-        if count % 1000 == 0:
+        if args.verbose and count % 1000 == 0:
             print("Submitted ", count, "blocks...")
         command = ["screen", "-S", args.screen, "-p", args.page, "-X", "stuff", "setblock " + str(block[0]) + " " + str(block[1]) + " " + str(block[2]) + " " + args.block_type + "\\n"]
         if args.verbose:
-            print(command)
+            print("Command: ", " ".join(command))
         if args.commit:
             subprocess.run(command)
    
