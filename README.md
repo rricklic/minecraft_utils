@@ -9,7 +9,7 @@ Examples:
 ![trex](https://user-images.githubusercontent.com/8059549/89734179-90234900-da28-11ea-88ca-9d10c79bce31.jpg)
 ![klein_bottle](https://user-images.githubusercontent.com/8059549/89734174-8994d180-da28-11ea-8945-9183dab5e0d5.jpg)
 ![d20](https://user-images.githubusercontent.com/8059549/89734187-987b8400-da28-11ea-8bd6-23ed950293e0.jpg)
-![d20_inside](https://user-images.githubusercontent.com/8059549/89734190-9f09fb80-da28-11ea-97de-9f31cda8372d.jpg)
+![d20_inside](https://user-images.githubusercontent.com/8059549/89734398-fa88b900-da29-11ea-8b65-6ef14d93e017.jpg)
 ![castle](https://user-images.githubusercontent.com/8059549/89734195-a9c49080-da28-11ea-8055-4870eccf1dac.jpg)
 ![banana_bat](https://user-images.githubusercontent.com/8059549/89734199-af21db00-da28-11ea-862a-5a03d118dc8e.jpg)
 
